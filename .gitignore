@@ -1,6 +1,7 @@
 # PyInstaller build artifacts (regenerable via: pyinstaller capture_auto.spec)
 build/
 dist/
+cap/
 
 # Python
 __pycache__/
