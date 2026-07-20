@@ -1,0 +1,13 @@
+# PyInstaller build artifacts (regenerable via: pyinstaller capture_auto.spec)
+build/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+
+# Local capture output (should never live in the repo)
+captures/
+
+# Retired/experimental scripts kept locally for reference only
+archive/

@@ -1,131 +1,54 @@
-Here’s a clean, professional, and technical-style README.md you can use directly for your GitHub repository of this BLE keyboard ESP32 project 👇
+# Build & Setup Notes
 
-# 🧠 ESP32 BLE Keyboard
+## 1. Find your interface number
 
-This project turns an **ESP32** into a **Bluetooth Low Energy (BLE) Keyboard (HID device)** capable of sending keystrokes, system, and media control commands to a paired device such as a computer, smartphone, or tablet.
+```
+"C:\Program Files\Wireshark\tshark.exe" -D
+```
 
-It uses the [`BleKeyboard`](https://github.com/T-vK/ESP32-BLE-Keyboard) library for Arduino to emulate a standard Bluetooth keyboard.
+Example output:
 
----
+```
+1. \Device\NPF_{D303B069-1D64-49AB-AAAD-944C2A213C9C} (Local Area Connection* 8)
+2. \Device\NPF_{46AEC726-F10F-47F0-BB26-84C179B920FC} (Local Area Connection* 7)
+3. \Device\NPF_{87B82E50-673A-4AF6-BB69-2C979023BCA5} (Local Area Connection* 6)
+4. \Device\NPF_{FB9FF667-F885-4175-9A98-16651E95160E} (Bluetooth Network Connection)
+5. \Device\NPF_{6FF72D1D-8515-4EF8-B6BB-6B87088050B7} (Wi-Fi)
+6. \Device\NPF_{20AE65D4-15D5-4F57-AE3F-BD0EA11DC278} (Local Area Connection* 10)
+7. \Device\NPF_{7A234687-C019-4C8F-A372-09F1935EB0E7} (Local Area Connection* 9)
+8. \Device\NPF_{E18ADC18-A5AD-46DA-A42F-D57D0C90EBCD} (Ethernet)
+9. \Device\NPF_{5B4FC98C-05DE-4BD7-BEA6-436A7E185BD9} (Ethernet 4)
+10. \Device\NPF_Loopback (Adapter for loopback traffic capture)
+11. etwdump (Event Tracing for Windows (ETW) reader)
+```
 
-## ⚙️ Features
+The interface number (leftmost column) is what goes into `config.ini`'s `interface` key.
 
-| Function | Description |
-|-----------|--------------|
-| **BLE Keyboard Emulation** | ESP32 acts as a standard Bluetooth keyboard (HID). |
-| **Automatic Text Sending** | Sends `"Hello world"` every loop when connected. |
-| **Keyboard Key Events** | Sends standard keys such as `Enter`, `Ctrl`, `Alt`, `Del`, etc. |
-| **Media Key Events** | Controls system media keys such as `Play/Pause`. |
-| **Connection Detection** | Operates only when a BLE client is connected. |
-| **Debug via Serial** | Prints log messages on the serial console for debugging. |
+## 2. Set paths and parameters
 
----
+If using `capture_auto.ps1` instead of the Python script, edit these values directly at the top of the file:
 
-## 🧩 Example Operation
+```powershell
+$tsharkPath = "C:\Program Files\Wireshark\tshark.exe"
+$outputFolder = "C:\Users\ARSIGCOMMgr\Desktop\captures"
+$interface = 8         # Change this to your interface number
+$duration = 5*60       # 5 minutes (in seconds)
+$retainCount = 10      # Keep only the last 10 captures
+```
 
-When powered on:
+Note: `capture_auto.ps1` does not support `retain_days`/`retain_log_days` — that logic only exists in `capture_auto.py`.
 
-1. ESP32 starts advertising as a BLE keyboard.  
-2. You can pair it with your computer or phone (shows up as **"ESP32 Keyboard"**).  
-3. Once connected:
-   - Types `"Hello world"`.
-   - Presses **Enter**.
-   - Sends **Play/Pause** media key.
-   - (Optionally) Sends **Ctrl+Alt+Del** combination.
+## 3. Build the standalone executable
 
----
+Requires `pyinstaller` (`pip install pyinstaller`):
 
-## 🧰 Hardware Requirements
+```
+pyinstaller --onefile --name capture_auto capture_auto.py
+```
 
-- **ESP32 development board** (with BLE support)
-- **USB cable** for programming
-- (Optional) **Push button** or input device if adding manual triggers
+This produces `dist\capture_auto.exe`. A prebuilt copy (plus its own `config.ini`) already lives in `cap\`.
 
----
+## 4. Running
 
-## 🧾 Software Requirements
-
-- **Arduino IDE** or **PlatformIO**
-- **BleKeyboard Library**  
-  Install via Arduino Library Manager or clone manually:
-
-  ```bash
-  https://github.com/T-vK/ESP32-BLE-Keyboard
-
-🧱 Code Explanation
-Main Sections
-1. Initialization
-BleKeyboard bleKeyboard;
-
-void setup() {
-  Serial.begin(115200);
-  Serial.println("Starting BLE work!");
-  bleKeyboard.begin();
-}
-
-
-Starts the BLE service and serial logging.
-
-2. Main Loop
-if (bleKeyboard.isConnected()) {
-  bleKeyboard.print("Hello world");
-  bleKeyboard.write(KEY_RETURN);
-  bleKeyboard.write(KEY_MEDIA_PLAY_PAUSE);
-}
-
-
-Checks if connected.
-
-Sends text, Enter key, and Play/Pause media key.
-
-3. (Optional) Modifier Keys
-bleKeyboard.press(KEY_LEFT_CTRL);
-bleKeyboard.press(KEY_LEFT_ALT);
-bleKeyboard.press(KEY_DELETE);
-delay(100);
-bleKeyboard.releaseAll();
-
-
-Demonstrates sending multiple modifier keys (e.g. Ctrl+Alt+Del).
-
-🧪 Example Serial Output
-Starting BLE work!
-Sending 'Hello world'...
-Sending Enter key...
-Sending Play/Pause media key...
-Waiting 5 seconds...
-
-🧩 Future Enhancements
-
-Add GPIO trigger button to send keystrokes manually.
-
-Add custom key sequences from configuration file or serial input.
-
-Extend to BLE Mouse or BLE Gamepad mode.
-
-⚠️ Notes
-
-Some key combinations (e.g. Ctrl+Alt+Del) are blocked on Windows for security reasons.
-
-BLE HID may not be supported on some Android versions without user permission.
-
-Works best with ESP32-WROOM, ESP32-S3, or similar boards supporting BLE.
-
-🧑‍💻 Example Use Cases
-
-Wireless automation keyboard
-
-Presentation or media remote
-
-Test keyboard input automation
-
-Security and accessibility tools
-
-🧾 License
-
-This project is released under the MIT License
-.
-
-Author: JExplorer
-Platform: ESP32 BLE HID (Arduino / PlatformIO)
-Repository: https://github.com/kojedt/ESP32-BLE-Keyboard
+- Must run as **Administrator** — Npcap/WinPcap requires elevated privileges to capture packets.
+- On first run with no `config.ini`, run with `-C` to generate one interactively.
